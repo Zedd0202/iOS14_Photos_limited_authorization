@@ -11,7 +11,7 @@ import PhotosUI
 
 class ViewController: UIViewController, PHPhotoLibraryChangeObserver {
     
-    var fetchResult: PHFetchResult<PHAsset> = PHFetchResult<PHAsset>()
+    var fetchResult = PHFetchResult<PHAsset>()
     var canAccessImages: [UIImage] = []
     var thumbnailSize: CGSize {
         let scale = UIScreen.main.scale
@@ -22,6 +22,7 @@ class ViewController: UIViewController, PHPhotoLibraryChangeObserver {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        // PHPhotoLibrary.shared().register(self) // 여기서 호출하게 되면 앱 삭제 후 처음 실행시 Add버튼을 누르지 않아도 사진 접근 권한 alert이 뜨게 된다.
         self.setupCollectionView()
         self.setupNavigationItem()
     }
@@ -38,33 +39,25 @@ class ViewController: UIViewController, PHPhotoLibraryChangeObserver {
     
     @objc
     func addButtonDidTap() {
-        self.requestPHPhotoLibraryAuthorization {
-            self.getCanAccessImages()
-        }
+        PHPhotoLibrary.shared().register(self)
+        self.requestPHPhotoLibraryAuthorization()
     }
     
-    func requestPHPhotoLibraryAuthorization(completion: @escaping () -> Void) {
+    func requestPHPhotoLibraryAuthorization() {
         PHPhotoLibrary.requestAuthorization(for: .readWrite) { (status) in
-            switch status {
-            case .limited:
-                PHPhotoLibrary.shared().register(self)
-                completion()
-            case .authorized:
-                completion()
-            default:
-                break
-            }
+            // code
         }
     }
     
     func getCanAccessImages() {
         self.canAccessImages = []
-        let options = PHImageRequestOptions()
-        let op = PHFetchOptions()
-        options.isSynchronous = true
-        self.fetchResult = PHAsset.fetchAssets(with: op)
+        let requestOptions = PHImageRequestOptions()
+        requestOptions.isSynchronous = true
+
+        let fetchOptions = PHFetchOptions()
+        self.fetchResult = PHAsset.fetchAssets(with: fetchOptions)
         self.fetchResult.enumerateObjects { (asset, _, _) in
-            PHImageManager().requestImage(for: asset, targetSize: self.thumbnailSize, contentMode: .aspectFill, options: options) { (image, info) in
+            PHImageManager().requestImage(for: asset, targetSize: self.thumbnailSize, contentMode: .aspectFill, options: requestOptions) { (image, info) in
                 guard let image = image else { return }
                 self.canAccessImages.append(image)
                 DispatchQueue.main.async {
