@@ -39,13 +39,20 @@ class ViewController: UIViewController, PHPhotoLibraryChangeObserver {
     
     @objc
     func addButtonDidTap() {
-        PHPhotoLibrary.shared().register(self)
-        self.requestPHPhotoLibraryAuthorization()
+        self.requestPHPhotoLibraryAuthorization {
+            self.getCanAccessImages()
+        }
     }
     
-    func requestPHPhotoLibraryAuthorization() {
+    func requestPHPhotoLibraryAuthorization(completion: @escaping () -> Void) {
         PHPhotoLibrary.requestAuthorization(for: .readWrite) { (status) in
-            // code
+            switch status {
+            case .limited:
+                PHPhotoLibrary.shared().register(self)
+                completion()
+            default:
+                break
+            }
         }
     }
     
